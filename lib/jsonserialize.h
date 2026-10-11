@@ -102,6 +102,7 @@ QJsonValue toJson(const T &v)
     else if constexpr (Impl::IsQSet<U>::value)       return setToJson(v);
     else if constexpr (Impl::IsQHash<U>::value)      return hashToJson(v);
 
+    else if constexpr (Impl::IsStdArray<U>::value)              return stdArrayToJson(v);
     else if constexpr (Impl::IsStdVector<U>::value)             return stdVectorToJson(v);
     else if constexpr (Impl::IsStdList<U>::value)               return stdListToJson(v);
     else if constexpr (Impl::IsStdDeque<U>::value)              return stdDequeToJson(v);
@@ -150,16 +151,17 @@ T fromJson(const QJsonValue &v)
     }
 
     // clang-format off
-    else if constexpr (IsQList<U>::value)      return jsonToList<typename IsQList<T>::ItemType>(v);
-    else if constexpr (IsQVector<U>::value)    return jsonToVector<typename IsQVector<U>::ItemType>(v);
-    else if constexpr (IsQSet<U>::value)       return jsonToSet<typename IsQSet<U>::ItemType>(v);
-    else if constexpr (IsQQueue<U>::value)     return jsonToQueue<typename IsQQueue<U>::ItemType>(v);
+    else if constexpr (IsQList<U>::value)      return jsonToList<T>(v);
+    else if constexpr (IsQVector<U>::value)    return jsonToVector<T>(v);
+    else if constexpr (IsQSet<U>::value)       return jsonToSet<T>(v);
+    else if constexpr (IsQQueue<U>::value)     return jsonToQueue<U>(v);
     else if constexpr (IsQPair<U>::value)      return jsonToPair<T>(v);
     else if constexpr (IsQMap<U>::value)       return jsonToMap<T>(v);
     else if constexpr (IsQMultiMap<U>::value)  return jsonToMultiMap<T>(v);
-    else if constexpr (IsQStack<U>::value)     return jsonToStack<typename IsQStack<U>::ItemType>(v);
+    else if constexpr (IsQStack<U>::value)     return jsonToStack<U>(v);
     else if constexpr (IsQHash<U>::value)      return jsonToHash<T>(v);
 
+    else if constexpr (IsStdArray<U>::value)              return jsonToStdArray<T>(v);
     else if constexpr (IsStdVector<U>::value)             return jsonToStdVector<T>(v);
     else if constexpr (IsStdList<U>::value)               return jsonToStdList<T>(v);
     else if constexpr (IsStdDeque<U>::value)              return jsonToStdDeque<T>(v);

@@ -82,9 +82,21 @@ IsKeyValueContainerX(std::multimap, StdMultiMap)
 
     // clang-format on
 
-    // QPair
+    // std::array
     template<typename T>
-    struct IsQPair : std::false_type
+    struct IsStdArray : std::false_type
+{};
+
+template<typename _ItemType, std::size_t _Size>
+struct IsStdArray<std::array<_ItemType, _Size>> : std::true_type
+{
+    using ItemType = _ItemType;
+    static constexpr std::size_t Size = _Size;
+};
+
+// QPair
+template<typename T>
+struct IsQPair : std::false_type
 {};
 
 template<typename First, typename Second>

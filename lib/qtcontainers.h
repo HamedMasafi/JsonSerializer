@@ -37,14 +37,14 @@ QJsonValue pairToJson(const QPair<First, Second> &v)
     return o;
 }
 
-template <typename T>
-QList<T> jsonToList(const QJsonValue &v){
+template <typename T, typename ItemType = IsQList<T>::ItemType>
+QList<ItemType> jsonToList(const QJsonValue &v){
     if (!v.isArray())
         return {};
     auto array = v.toArray();
-    QList<T> ret;
+    QList<ItemType> ret;
     for (auto item : std::as_const(array))
-        ret << fromJson<T>(item);
+        ret << fromJson<ItemType>(item);
     return ret;
 }
 template <typename T>
@@ -57,8 +57,8 @@ QJsonValue listToJson(const QList<T> &v){
     return result;
 }
 
-template <typename T>
-QVector<T> jsonToVector(const QJsonValue &v){
+template <typename T, typename ItemType = IsQVector<T>::ItemType>
+QVector<ItemType> jsonToVector(const QJsonValue &v){
     return jsonToList<T>(v);
 }
 template <typename T>
@@ -67,13 +67,12 @@ QJsonValue vectorToJson(const QVector<T> &v)
     return listToJson(v);
 }
 
-template <typename T>
-QQueue<T> jsonToQueue(const QJsonValue &v)
+template <typename T, typename ItemType = IsQQueue<T>::ItemType>
+QQueue<ItemType> jsonToQueue(const QJsonValue &v)
 {
     if (!v.isArray())
         return {};
     const auto array = v.toArray();
-    using ItemType = typename IsQQueue<T>::ValueType;
     QQueue<ItemType> ret;
     for (const auto &item : std::as_const(array))
         ret.enqueue(fromJson<ItemType>(item));
@@ -88,13 +87,12 @@ QJsonValue queueToJson(const QQueue<T> &v)
     return result;
 }
 
-template <typename T>
-QStack<T> jsonToStack(const QJsonValue &v)
+template <typename T, typename ItemType = IsQStack<T>::ItemType>
+QStack<ItemType> jsonToStack(const QJsonValue &v)
 {
     if (!v.isArray())
         return {};
     const auto array = v.toArray();
-    using ItemType = typename IsQStack<T>::ValueType;
     QStack<ItemType> ret;
     for (const auto &item : std::as_const(array))
         ret.push(fromJson<ItemType>(item));
@@ -104,18 +102,17 @@ template <typename T>
 QJsonValue stackToJson(const QStack<T> &v)
 {
     QJsonArray result;
-    for (auto it = v.begin(); v != v.rend(); ++it)
+    for (auto it = v.cbegin(); it != v.cend(); ++it)
         result.append(toJson(*it));
     return result;
 }
 
-template <typename T>
-QSet<T> jsonToSet(const QJsonValue &v)
+template <typename T, typename ItemType = IsQSet<T>::ItemType>
+QSet<ItemType> jsonToSet(const QJsonValue &v)
 {
     if (!v.isArray())
         return {};
     const auto array = v.toArray();
-    using ItemType = typename IsQSet<T>::ValueType;
     QSet<ItemType> ret;
     ret.reserve(array.size());
     for (const auto &item : std::as_const(array))
@@ -208,20 +205,18 @@ QJsonValue hashToJson(const QHash<KeyType, ValueType> &v)
 // ==================== Sequential Containers ====================
 
 // ---------- std::vector ----------
-template <typename T>
-std::vector<T>  jsonToStdVector(const QJsonValue &v)
+template<typename T, typename ItemType = IsStdVector<T>::ItemType>
+std::vector<ItemType> jsonToStdVector(const QJsonValue &v)
 {
     if (!v.isArray())
         return {};
     const auto array = v.toArray();
-    using ItemType = typename IsStdVector<T>::ValueType;   // یا هر traitی که دارید
     std::vector<ItemType> ret;
     ret.reserve(array.size());
     for (const auto &item : std::as_const(array))
         ret.push_back(fromJson<ItemType>(item));
     return ret;
 }
-
 template <typename T>
 QJsonValue stdVectorToJson(const std::vector<T> &v)
 {
@@ -231,14 +226,35 @@ QJsonValue stdVectorToJson(const std::vector<T> &v)
     return result;
 }
 
+template<typename T, typename ItemType = IsStdArray<T>::ItemType, std::size_t Size = IsStdArray<T>::Size>
+std::array<ItemType, Size> jsonToStdArray(const QJsonValue &v)
+{
+    if (!v.isArray())
+        return {};
+    std::array<ItemType, Size> arr;
+    std::size_t index{};
+
+    const auto array = v.toArray();
+    for (const auto &item : std::as_const(array))
+        arr[index++] = fromJson<ItemType>(item);
+    return arr;
+}
+template <typename T, std::size_t Size>
+QJsonValue stdArrayToJson(const std::array<T, Size> &v)
+{
+    QJsonArray result;
+    for (auto item: v)
+        result.append(toJson(item));
+    return result;
+}
+
 // ---------- std::list ----------
-template <typename T>
-std::list<T> jsonToStdList(const QJsonValue &v)
+template <typename T, typename ItemType = IsStdList<T>::ItemType>
+std::list<ItemType> jsonToStdList(const QJsonValue &v)
 {
     if (!v.isArray())
         return {};
     const auto array = v.toArray();
-    using ItemType = typename IsStdList<T>::ValueType;
     std::list<ItemType> ret;
     for (const auto &item : std::as_const(array))
         ret.push_back(fromJson<ItemType>(item));
@@ -255,13 +271,12 @@ QJsonValue stdListToJson(const std::list<T> &v)
 }
 
 // ---------- std::deque ----------
-template <typename T>
-std::deque<T> jsonToStdDeque(const QJsonValue &v)
+template <typename T, typename ItemType = IsStdDeque<T>::ItemType>
+std::deque<ItemType> jsonToStdDeque(const QJsonValue &v)
 {
     if (!v.isArray())
         return {};
     const auto array = v.toArray();
-    using ItemType = typename IsStdDeque<T>::ValueType;
     std::deque<ItemType> ret;
     for (const auto &item : std::as_const(array))
         ret.push_back(fromJson<ItemType>(item));

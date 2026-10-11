@@ -104,6 +104,7 @@ private slots:
     void testMap();
     void testPair();
     void testGadget();
+    void testAllVectorLikeContainers();
 };
 
 void BasicTest::testBasicTypes()
@@ -343,6 +344,81 @@ void BasicTest::testGadget()
 
     delete c;
     delete c2;
+}
+
+void BasicTest::testAllVectorLikeContainers()
+{
+    using namespace JsonSerializer;
+
+    // ---------- 1. Prepare source data ----------
+    const QList<int> source = {10, 20, 30, 40, 50};
+
+    // ---------- 2. Create all vector-like containers ----------
+    QList<int> qlist;
+    QVector<int> qvector;
+    QStack<int> qstack;
+    QQueue<int> qqueue;
+
+    std::vector<int> stdvector;
+    std::list<int> stdlist;
+    std::deque<int> stddeque;
+    std::array<int, 5> stdarray{};
+
+    // ---------- 3. Fill all containers with the same data (one loop) ----------
+    for (int value : source) {
+        qlist << value;
+        qvector << value;
+        qstack.push(value);
+        qqueue.enqueue(value);
+
+        stdvector.push_back(value);
+        stdlist.push_back(value);
+        stddeque.push_back(value);
+    }
+
+    // std::array needs special handling (fixed size)
+    for (int i = 0; i < source.size(); ++i)
+        stdarray[i] = source[i];
+
+    // ---------- 4. Helper lambda to test one container ----------
+    auto testContainer = [](const auto &original, const char *name) {
+        using Container = std::decay_t<decltype(original)>;
+
+        // Serialize
+        QJsonValue json = toJson(original);
+        QVERIFY2(json.isArray(), qPrintable(QString("%1: expected JSON array").arg(name)));
+        QCOMPARE(json.toArray().size(), static_cast<int>(original.size()));
+
+        // Deserialize
+        Container restored = fromJson<Container>(json);
+
+        // Compare size
+        QCOMPARE(static_cast<int>(restored.size()), static_cast<int>(original.size()));
+
+        // Compare content
+        auto it1 = original.begin();
+        auto it2 = restored.begin();
+        int index = 0;
+        while (it1 != original.end()) {
+            QCOMPARE(*it1, *it2);
+            ++it1;
+            ++it2;
+            ++index;
+        }
+
+        qDebug() << "✓" << name << "passed";
+    };
+
+    // ---------- 5. Run tests for all containers ----------
+    testContainer(qlist, "QList");
+    testContainer(qvector, "QVector");
+    testContainer(qstack, "QStack");
+    testContainer(qqueue, "QQueue");
+
+    testContainer(stdvector, "std::vector");
+    testContainer(stdlist, "std::list");
+    testContainer(stddeque, "std::deque");
+    testContainer(stdarray, "std::array");
 }
 
 int MyGadget::intValue() const
