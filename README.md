@@ -205,15 +205,6 @@ private:
 
 ---
 
-## Important Notes
-
-- `QMultiMap` and `std::multimap` preserve the insertion order of values for the same key during round-trip.
-- `QMultiMap::values(key)` returns values in **reverse** insertion order (newest first).  
-  Use iterators if you need the original insertion order.
-- Raw pointers (`T*`) transfer ownership on deserialization.
-- The library is completely **header-only**. Just include `jsonserialize.h`.
-
----
 
 ## License
 
