@@ -2,9 +2,11 @@
 
 #include <QDataStream>
 #include <QIODevice>
+#include <QMatrix4x4>
 #include "jsonserialize.h"
-#include "qttypes.h"
 #include "object.h"
+#include "qttypes.h"
+#include "qtcontainers.h"
 
 namespace JsonSerializer::Impl {
 
@@ -87,6 +89,24 @@ QVariant jsonToVariant(const QJsonObject &obj)
     return {};
 }
 
+QVariant unpackJsonToVariant(const QJsonValue &v)
+{
+    auto o = v.toObject();
+    auto type = QMetaType::type(o[TYPE_KEY].toString().toLatin1());
+    auto val = o[TYPE_VALUE];
+    return jsonToVariant(val, static_cast<QMetaType::Type>(type));
+}
+
+QJsonValue packVariantToJson(const QVariant &val)
+{
+    // clang-format off
+    return QJsonObject {
+        {TYPE_KEY, QMetaType(val.userType()).name()},
+        {TYPE_VALUE, variantToJson(val)}
+    };
+    // clang-format on
+}
+
 QJsonValue variantToJson(const QVariant &val)
 {
     using namespace Impl;
@@ -97,6 +117,8 @@ QJsonValue variantToJson(const QVariant &val)
     QJsonValue v;
     // clang-format off
     switch (typeId) {
+    case QMetaType::UnknownType: v = QJsonValue{}; break;
+    case QMetaType::Nullptr: v = QJsonValue{}; break;
     case QMetaType::Bool: v = toJson(val.toBool()); break;
     case QMetaType::Int: v = toJson(val.toInt()); break;
     case QMetaType::UInt: v = toJson(val.toUInt()); break;
@@ -147,6 +169,13 @@ QJsonValue variantToJson(const QVariant &val)
     case QMetaType::QEasingCurve: v = toJson(val.value<QEasingCurve>()); break;
     case QMetaType::QByteArrayList: v = toJson(val.value<QByteArrayList>()); break;
     case QMetaType::QColorSpace: v = toJson(val.value<QColorSpace>()); break;
+    case QMetaType::QChar: v = toJson(val.value<QChar>()); break;
+    case QMetaType::Float16: v = toJson(val.value<qfloat16>()); break;
+    case QMetaType::QLocale: v = toJson(val.value<QLocale>()); break;
+    case QMetaType::QMatrix4x4: v = toJson(val.value<QMatrix4x4>()); break;
+    case QMetaType::QVariantList: v = listToJson<QVariantList>(val.toList()); break;
+    case QMetaType::QVariantMap: v = mapToJson<QVariantMap>(val.toMap()); break;
+    case QMetaType::QVariantHash: v = hashToJson<QVariantHash>(val.toHash()); break;
     // clang-format on
     default: {
         auto mt = QMetaType(typeId);
@@ -165,29 +194,12 @@ QJsonValue variantToJson(const QVariant &val)
     return v;//QJsonObject{{TYPE_KEY, QString{QMetaType(typeId).name()}}, {TYPE_VALUE, v}};
 }
 
-QVariant unpackJsonToVariant(const QJsonValue &v)
-{
-    auto o = v.toObject();
-    auto type = QMetaType::type(o[TYPE_KEY].toString().toLatin1());
-    auto val = o[TYPE_VALUE];
-    qDebug() << type << static_cast<QMetaType::Type>(type);
-    return jsonToVariant(val, static_cast<QMetaType::Type>(type));
-}
-
-QJsonValue packVariantToJson(const QVariant &val)
-{
-    // clang-format off
-    return QJsonObject {
-        {TYPE_KEY, QMetaType(val.userType()).name()},
-        {TYPE_VALUE, variantToJson(val)}
-    };
-    // clang-format on
-}
-
 QVariant jsonToVariant(const QJsonValue &v, QMetaType::Type type)
 {
     switch (type) {
-        // clang-format off
+    // clang-format off
+    case QMetaType::UnknownType: return QVariant{}; break;
+    case QMetaType::Nullptr: return QVariant::fromValue(nullptr); break;
     case QMetaType::Bool: return QVariant::fromValue(fromJson<bool>(v));
     case QMetaType::Int: return QVariant::fromValue(fromJson<int>(v));
     case QMetaType::UInt: return QVariant::fromValue(fromJson<uint>(v));
@@ -238,6 +250,13 @@ QVariant jsonToVariant(const QJsonValue &v, QMetaType::Type type)
     case QMetaType::QEasingCurve: return QVariant::fromValue(fromJson<QEasingCurve>(v));
     case QMetaType::QByteArrayList: return QVariant::fromValue(fromJson<QByteArrayList>(v));
     case QMetaType::QColorSpace: return QVariant::fromValue(fromJson<QColorSpace>(v));
+    case QMetaType::QChar: return QVariant::fromValue(fromJson<QChar>(v)); break;
+    case QMetaType::Float16: return QVariant::fromValue(fromJson<qfloat16>(v)); break;
+    case QMetaType::QLocale: return QVariant::fromValue(fromJson<QLocale>(v)); break;
+    case QMetaType::QMatrix4x4: return QVariant::fromValue(fromJson<QMatrix4x4>(v)); break;
+    case QMetaType::QVariantList: return QVariant::fromValue(jsonToList<QVariantList>(v)); break;
+    case QMetaType::QVariantMap: return QVariant::fromValue(jsonToMap<QVariantMap>(v)); break;
+    case QMetaType::QVariantHash: return QVariant::fromValue(jsonToHash<QVariantHash>(v)); break;
     // clang-format on
     default: {
         auto mt = QMetaType(type);

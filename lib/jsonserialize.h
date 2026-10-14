@@ -31,22 +31,6 @@ T fromJson(const QJsonValue &v);
 
 namespace JsonSerializer {
 
-namespace Impl {}
-
-// ------------------------------------------------------------
-// QMap<QString, T>
-// ------------------------------------------------------------
-
-template<typename T>
-struct IsQStringMap : std::false_type
-{};
-
-template<typename T>
-struct IsQStringMap<QMap<QString, T>> : std::true_type
-{
-    using ValueType = T;
-};
-
 class Serializable
 {
 public:
@@ -62,12 +46,14 @@ QJsonValue toJson(const T &v)
     using Raw = std::remove_cv_t<std::remove_reference_t<T>>;
     using U = std::remove_pointer_t<Raw>; // حالا U همیشه خود کلاس است
 
-    if constexpr (Impl::IsQtTypeType<U>::value)
-        return Impl::basicTypeToJson(v);
+    if constexpr (std::is_null_pointer_v<U>)
+        return {};
+    else if constexpr (Impl::IsQtTypeType<U>::value)
+        return basicTypeToJson(v);
     else if constexpr (std::is_base_of_v<QObject, U>)
-        return Impl::objectToJson(v);
+        return objectToJson(v);
     else if constexpr (Impl::IsQGadget<U>)
-        return Impl::gadgetToJson(v, U::staticMetaObject);
+        return gadgetToJson(v, U::staticMetaObject);
     else if constexpr (std::is_base_of_v<Serializable, U>) {
         QJsonObject o;
         v->saveState(o);
@@ -92,26 +78,27 @@ QJsonValue toJson(const T &v)
     else if constexpr (IsQSharedPointer<U>::value)   return toJson(v.data());
     else if constexpr (IsStdPointer<U>::value)       return toJson(v.data());
 
-    else if constexpr (Impl::IsQPair<U>::value)      return pairToJson<U>(v);
-    else if constexpr (Impl::IsQList<U>::value)      return listToJson(v);
-    else if constexpr (Impl::IsQVector<U>::value)    return vectorToJson(v);
-    else if constexpr (Impl::IsQMap<U>::value)       return mapToJson<U>(v);
-    else if constexpr (Impl::IsQMultiMap<U>::value)  return multiMapToJson(v);
-    else if constexpr (Impl::IsQStack<U>::value)     return stackToJson(v);
-    else if constexpr (Impl::IsQQueue<U>::value)     return queueToJson(v);
-    else if constexpr (Impl::IsQSet<U>::value)       return setToJson(v);
-    else if constexpr (Impl::IsQHash<U>::value)      return hashToJson(v);
+    else if constexpr (IsQPair<U>::value)      return pairToJson<U>(v);
+    else if constexpr (IsQList<U>::value)      return listToJson<U>(v);
+    else if constexpr (IsQVector<U>::value)    return vectorToJson<U>(v);
+    else if constexpr (IsQMap<U>::value)       return mapToJson<U>(v);
+    else if constexpr (IsQMultiMap<U>::value)  return multiMapToJson<U>(v);
+    else if constexpr (IsQStack<U>::value)     return stackToJson(v);
+    else if constexpr (IsQQueue<U>::value)     return queueToJson(v);
+    else if constexpr (IsQSet<U>::value)       return setToJson<U>(v);
+    else if constexpr (IsQHash<U>::value)      return hashToJson<U>(v);
+    else if constexpr (IsQMultiHash<U>::value) return multiHashToJson<U>(v);
 
-    else if constexpr (Impl::IsStdArray<U>::value)              return stdArrayToJson(v);
-    else if constexpr (Impl::IsStdVector<U>::value)             return stdVectorToJson(v);
-    else if constexpr (Impl::IsStdList<U>::value)               return stdListToJson(v);
-    else if constexpr (Impl::IsStdDeque<U>::value)              return stdDequeToJson(v);
-    else if constexpr (Impl::IsStdSet<U>::value)                return stdSetToJson(v);
-    else if constexpr (Impl::IsStdMultiSet<U>::value)           return stdMultiSetToJson(v);
-    else if constexpr (Impl::IsStdUnorderedSet<U>::value)       return stdUnorderedSetToJson(v);
-    else if constexpr (Impl::IsStdUnorderedMultiSet<U>::value)  return stdUnorderedMultiSetToJson(v);
-    else if constexpr (Impl::IsStdMap<U>::value)                return stdMapToJson(v);
-    else if constexpr (Impl::IsStdMultiMap<U>::value)           return stdMultiMapToJson(v);
+    else if constexpr (IsStdArray<U>::value)              return stdArrayToJson(v);
+    else if constexpr (IsStdVector<U>::value)             return stdVectorToJson(v);
+    else if constexpr (IsStdList<U>::value)               return stdListToJson(v);
+    else if constexpr (IsStdDeque<U>::value)              return stdDequeToJson(v);
+    else if constexpr (IsStdSet<U>::value)                return stdSetToJson<U>(v);
+    else if constexpr (IsStdMultiSet<U>::value)           return stdMultiSetToJson<U>(v);
+    else if constexpr (IsStdUnorderedSet<U>::value)       return stdUnorderedSetToJson<U>(v);
+    else if constexpr (IsStdUnorderedMultiSet<U>::value)  return stdUnorderedMultiSetToJson<U>(v);
+    else if constexpr (IsStdMap<U>::value)                return stdMapToJson<U>(v);
+    else if constexpr (IsStdMultiMap<U>::value)           return stdMultiMapToJson<U>(v);
 
     // clang-format on
 
@@ -125,7 +112,9 @@ T fromJson(const QJsonValue &v)
     using Raw = std::remove_cv_t<std::remove_reference_t<T>>;
     using U = std::remove_pointer_t<Raw>; // حالا U همیشه خود کلاس است
 
-    if constexpr (Impl::IsQtTypeType<U>::value) {
+    if constexpr (std::is_null_pointer_v<U>)
+        return nullptr;
+    else if constexpr (Impl::IsQtTypeType<U>::value) {
         return Impl::jsonToBasicType<T>(v);
     } else if constexpr (std::is_base_of_v<QObject, U>) {
         auto o = new U;
@@ -160,6 +149,7 @@ T fromJson(const QJsonValue &v)
     else if constexpr (IsQMultiMap<U>::value)  return jsonToMultiMap<T>(v);
     else if constexpr (IsQStack<U>::value)     return jsonToStack<U>(v);
     else if constexpr (IsQHash<U>::value)      return jsonToHash<T>(v);
+    else if constexpr (IsQMultiHash<U>::value) return jsonToMultiHash<T>(v);
 
     else if constexpr (IsStdArray<U>::value)              return jsonToStdArray<T>(v);
     else if constexpr (IsStdVector<U>::value)             return jsonToStdVector<T>(v);

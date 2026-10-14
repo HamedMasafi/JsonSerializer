@@ -137,4 +137,14 @@ struct is_qgadget<T, std::void_t<typename T::QtGadgetHelper>> : std::true_type
 template<typename T>
 constexpr bool IsQGadget = is_qgadget<std::remove_cv_t<std::remove_pointer_t<T>>>::value;
 
+template<typename T>
+struct IsString : std::false_type
+{};
+template<>
+struct IsString<QString> : std::true_type
+{};
+template<>
+struct IsString<std::string> : std::true_type
+{};
+
 } // namespace JsonSerializer::Impl

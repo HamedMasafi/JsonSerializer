@@ -3,6 +3,7 @@
 #include <QBuffer>
 #include <QJsonArray>
 #include <QJsonObject>
+#include <QMatrix4x4>
 #include <QMetaEnum>
 
 #include "jsonserialize.h"
@@ -14,7 +15,6 @@ QJsonValue basicTypeToJson<bool>(const bool &v)
 {
     return QJsonValue{v};
 }
-
 template<>
 bool jsonToBasicType<bool>(const QJsonValue &v)
 {
@@ -174,18 +174,6 @@ template<>
 QString jsonToBasicType<QString>(const QJsonValue &v)
 {
     return v.toString();
-}
-
-// QChar
-template<>
-QJsonValue basicTypeToJson<QChar>(const QChar &v)
-{
-    return QJsonValue(QString(v));
-}
-template<>
-QChar jsonToBasicType<QChar>(const QJsonValue &v)
-{
-    return v.toString().at(0);
 }
 
 // QByteArray
@@ -972,6 +960,93 @@ template<>
 QEasingCurve jsonToBasicType<QEasingCurve>(const QJsonValue &v)
 {
     return QEasingCurve{static_cast<QEasingCurve::Type>(v.toInt())};
+}
+
+// QChar
+template<>
+QJsonValue basicTypeToJson<QChar>(const QChar &v)
+{
+    return QJsonValue{QString{v}};
+}
+template<>
+QChar jsonToBasicType<QChar>(const QJsonValue &v)
+{
+    const QString str = v.toString();
+    return str.isEmpty() ? QChar{} : str.front();
+}
+
+
+// qfloat16
+template<>
+QJsonValue basicTypeToJson<qfloat16>(const qfloat16 &v)
+{
+    return QJsonValue{static_cast<float>(v)};
+}
+template<>
+qfloat16 jsonToBasicType<qfloat16>(const QJsonValue &v)
+{
+    return qfloat16{v.toDouble()};
+}
+
+// QLocale
+template<>
+QJsonValue basicTypeToJson<QLocale>(const QLocale &v)
+{
+    return QJsonValue{v.name()};
+}
+template<>
+QLocale jsonToBasicType<QLocale>(const QJsonValue &v)
+{
+    return QLocale{v.toString()};
+}
+
+// QMatrix4x4
+template<>
+QJsonValue basicTypeToJson<QMatrix4x4>(const QMatrix4x4 &v)
+{
+    QJsonArray array;
+
+    const float *data = v.constData();
+    for (int i = 0; i < 16; ++i)
+        array.append(data[i]);
+
+    return array;
+}
+template<>
+QMatrix4x4 jsonToBasicType<QMatrix4x4>(const QJsonValue &v)
+{
+    const QJsonArray array = v.toArray();
+
+    if (array.size() != 16)
+        return {};
+
+    QMatrix4x4 matrix;
+    float data[16];
+
+    for (int i = 0; i < 16; ++i)
+        data[i] = static_cast<float>(array[i].toDouble());
+
+    matrix = QMatrix4x4{
+        data[0],  data[4],  data[8],  data[12],
+        data[1],  data[5],  data[9],  data[13],
+        data[2],  data[6],  data[10], data[14],
+        data[3],  data[7],  data[11], data[15]
+    };
+
+    return matrix;
+}
+
+
+// std::string
+template<>
+QJsonValue basicTypeToJson<std::string>(const std::string &v)
+{
+    return QJsonValue{QString::fromStdString(v)};
+}
+template<>
+std::string jsonToBasicType<std::string>(const QJsonValue &v)
+{
+    return v.toString().toStdString();
 }
 
 } // namespace JsonSerializer::Impl

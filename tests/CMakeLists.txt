@@ -1,3 +1,5 @@
 enable_testing()
 add_subdirectory(basic)
 add_subdirectory(object)
+add_subdirectory(variant)
+add_subdirectory(containers)
