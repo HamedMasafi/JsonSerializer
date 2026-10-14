@@ -1,8 +1,9 @@
+
 # JsonSerializer
 
-**A modern, header-only, type-safe JSON serialization library for Qt 6**
+**A modern, type-safe JSON serialization library for Qt 6**
 
-JsonSerializer provides a clean and powerful way to convert almost any C++ / Qt type to and from `QJsonValue` with a single pair of functions:
+JsonSerializer lets you convert almost any C++ / Qt type to and from `QJsonValue` with just two functions:
 
 ```cpp
 namespace JsonSerializer {
@@ -18,18 +19,18 @@ namespace JsonSerializer {
 
 ## Features
 
-- **Extremely simple API** – just two functions
+- Extremely simple API – only two functions
 - Full support for:
   - All basic types registered in `QMetaType`
-  - Qt containers (`QList`, `QVector`, `QMap`, `QHash`, `QSet`, `QStack`, `QQueue`, `QMultiMap`, `QMultiHash`, ...)
-  - STL containers (`std::vector`, `std::list`, `std::deque`, `std::map`, `std::unordered_map`, `std::set`, `std::unordered_set`, ...)
-  - `QObject` derived classes
+  - Qt containers (`QList`, `QVector`, `QMap`, `QHash`, `QSet`, `QStack`, `QQueue`, `QMultiMap`, `QMultiHash`, …)
+  - STL containers (`std::vector`, `std::list`, `std::deque`, `std::map`, `std::unordered_map`, `std::set`, …)
+  - `QObject`-derived classes
   - `Q_GADGET` classes
   - Smart pointers (`QSharedPointer`, `std::shared_ptr`)
-  - Custom types via `Serializable` interface
+  - Custom types via the `Serializable` interface
 - Header-only
 - Zero macros required for basic usage
-- Works with both Qt and modern C++ types seamlessly
+- Seamless support for both Qt and modern C++ types
 
 ---
 
@@ -57,7 +58,7 @@ target_link_libraries(your_target
 )
 ```
 
-### FetchContent example
+### FetchContent
 
 ```cmake
 include(FetchContent)
@@ -97,11 +98,11 @@ int main()
 
     // Serialize
     QJsonValue json = JsonSerializer::toJson(p);
-    qDebug() << json;   // {"age":30,"name":"Alice"}
+    qDebug() << json;           // {"age":30,"name":"Alice"}
 
     // Deserialize
     Person p2 = JsonSerializer::fromJson<Person>(json);
-    qDebug() << p2.name << p2.age;
+    qDebug() << p2.name << p2.age;  // Alice 30
 }
 ```
 
@@ -110,43 +111,61 @@ int main()
 ## Supported Types
 
 ### Basic / QMetaType types
-`bool`, `int`, `uint`, `qint64`, `quint64`, `float`, `double`, `QString`, `QByteArray`, `QDate`, `QTime`, `QDateTime`, `QUrl`, `QUuid`, `QJsonValue`, `QJsonObject`, `QJsonArray`, `QVariant`, ...
+`bool`, `int`, `uint`, `qint64`, `quint64`, `float`, `double`,  
+`QString`, `QByteArray`, `QDate`, `QTime`, `QDateTime`,  
+`QUrl`, `QUuid`, `QJsonValue`, `QJsonObject`, `QJsonArray`, `QVariant`, …
 
 ### Qt Containers
 
-| Container             | Supported |
-|-----------------------|-----------|
-| `QList<T>`            | ✅        |
-| `QVector<T>`          | ✅        |
-| `QStack<T>`           | ✅        |
-| `QQueue<T>`           | ✅        |
-| `QSet<T>`             | ✅        |
-| `QMap<Key, T>`        | ✅        |
-| `QMultiMap<Key, T>`   | ✅        |
-| `QHash<Key, T>`       | ✅        |
-| `QMultiHash<Key, T>`  | ✅        |
-| `QStringList`         | ✅        |
-| `QPair<T1, T2>`       | ✅        |
+| Container            | Notes                              |
+|----------------------|------------------------------------|
+| `QList<T>`           |                                    |
+| `QVector<T>`         | Treated as `QList` in Qt 6         |
+| `QStack<T>`          |                                    |
+| `QQueue<T>`          |                                    |
+| `QSet<T>`            |                                    |
+| `QStringList`        |                                    |
+| `QPair<T1,T2>`       |                                    |
+| `QMap<Key,T>`        | Object if `Key` is string-like     |
+| `QMultiMap<Key,T>`   | Always array of `{key,value}`      |
+| `QHash<Key,T>`       | Object if `Key` is string-like     |
+| `QMultiHash<Key,T>`  | Always array of `{key,value}`      |
 
 ### STL Containers
 
-| Container                             | Supported |
-|---------------------------------------|-----------|
-| `std::vector<T>`                      | ✅        |
-| `std::list<T>`                        | ✅        |
-| `std::deque<T>`                       | ✅        |
-| `std::array<T, N>`                    | ✅        |
-| `std::set<T>` / `std::multiset`       | ✅        |
-| `std::unordered_set` / `multiset`     | ✅        |
-| `std::map` / `std::multimap`          | ✅        |
-| `std::unordered_map` / `multimap`     | ✅        |
-| `std::stack` / `std::queue`           | ✅        |
-| `std::pair<T1, T2>`                   | ✅        |
+| Container                          | Notes                              |
+|------------------------------------|------------------------------------|
+| `std::vector<T>`                   |                                    |
+| `std::list<T>`                     |                                    |
+| `std::deque<T>`                    |                                    |
+| `std::array<T,N>`                  |                                    |
+| `std::set` / `std::multiset`       |                                    |
+| `std::unordered_set` / `multiset`  |                                    |
+| `std::map` / `std::multimap`       | Object if `Key` is string-like     |
+| `std::unordered_map` / `multimap`  | Object if `Key` is string-like     |
+| `std::stack` / `std::queue`        |                                    |
+| `std::pair<T1,T2>`                 |                                    |
 
 ### Classes
 - Any class inheriting `QObject` (with `Q_OBJECT`)
 - Any class marked with `Q_GADGET` + `Q_PROPERTY`
 - Classes implementing the `JsonSerializer::Serializable` interface
+
+---
+
+## Map Serialization Rules
+
+- **String-like keys** (`QString`, `std::string`, …) → serialized as a **JSON Object**  
+  (cleaner and more natural)
+- **Non-string keys** → serialized as a **JSON Array** of objects:
+  ```json
+  [
+    { "key": 1, "value": "one" },
+    { "key": 2, "value": "two" }
+  ]
+  ```
+- `QMultiMap` / `QMultiHash` / `std::multimap` / `std::unordered_multimap`  
+  are **always** serialized as arrays (because JSON objects cannot have duplicate keys).
 
 ---
 
@@ -160,7 +179,8 @@ struct Point {
     Q_PROPERTY(double x MEMBER x)
     Q_PROPERTY(double y MEMBER y)
 public:
-    double x = 0, y = 0;
+    double x = 0.0;
+    double y = 0.0;
 };
 ```
 
@@ -185,18 +205,19 @@ private:
 
 ---
 
-## Notes & Design Decisions
+## Important Notes
 
-- Maps (`QMap`, `std::map`, etc.) are serialized as **JSON arrays of objects** with `"key"` and `"value"` fields. This allows non-string keys.
-- `QVector` is treated as an alias of `QList` (as it is in Qt 6).
-- Pointers (`T*`, `QSharedPointer<T>`, `std::shared_ptr<T>`) are supported (ownership is transferred on deserialization for raw pointers).
-- The library is **header-only**. Just include `jsonserialize.h`.
+- `QMultiMap` and `std::multimap` preserve the insertion order of values for the same key during round-trip.
+- `QMultiMap::values(key)` returns values in **reverse** insertion order (newest first).  
+  Use iterators if you need the original insertion order.
+- Raw pointers (`T*`) transfer ownership on deserialization.
+- The library is completely **header-only**. Just include `jsonserialize.h`.
 
 ---
 
 ## License
 
-MIT License – see [LICENSE](LICENSE) for details.
+LGPL v3 License
 
 ---
 
