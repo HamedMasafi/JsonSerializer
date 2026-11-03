@@ -21,10 +21,35 @@ QJsonValue toJson(const T &v);
 template<typename T>
 T fromJson(const QJsonValue &v);
 
+class JsonContainer
+{
+public:
+    JsonContainer() {}
+    JsonContainer(const QJsonValue &v)
+        : _val{std::move(v)}
+    {}
+
+    template<typename T>
+    operator T() const &
+    {
+        return fromJson<T>(_val);
+    }
+
+    template<typename T>
+    operator T() &&
+    {
+        return fromJson<T>(std::move(_val));
+    }
+
+private:
+    QJsonValue _val;
+};
+
 } // namespace JsonSerializer
 
-
+#include "enum.h"
 #include "object.h"
+#include "options.h"
 #include "qtcontainers.h"
 #include "qttypes.h"
 #include "variant.h"
@@ -37,7 +62,6 @@ public:
     virtual void saveState(QJsonObject &) = 0;
     virtual void restoreState(const QJsonObject &) = 0;
 };
-
 
 template<typename T>
 QJsonValue toJson(const T &v)
@@ -58,18 +82,18 @@ QJsonValue toJson(const T &v)
         QJsonObject o;
         v->saveState(o);
         return o;
-    // } else if constexpr (std::is_same_v<U, QVariantMap>) {
-    //     QJsonObject obj;
-    //     for (auto it = v.begin(); it != v.end(); ++it)
-    //         obj[it.key()] = Impl::variantToJson(it.value());
-    //     return obj;
-    // } else if constexpr (IsQStringMap<U>::value) {
-    //     QJsonObject result;
+        // } else if constexpr (std::is_same_v<U, QVariantMap>) {
+        //     QJsonObject obj;
+        //     for (auto it = v.begin(); it != v.end(); ++it)
+        //         obj[it.key()] = Impl::variantToJson(it.value());
+        //     return obj;
+        // } else if constexpr (IsQStringMap<U>::value) {
+        //     QJsonObject result;
 
-    //     for (auto it = v.cbegin(); it != v.cend(); ++it)
-    //         result.insert(it.key(), toJson(it.value()));
+        //     for (auto it = v.cbegin(); it != v.cend(); ++it)
+        //         result.insert(it.key(), toJson(it.value()));
 
-    //     return result;
+        //     return result;
     } else if constexpr (std::is_same_v<QVariant, U>) {
         return packVariantToJson(v);
     }
@@ -99,15 +123,21 @@ QJsonValue toJson(const T &v)
     else if constexpr (IsStdUnorderedMultiSet<U>::value)  return stdUnorderedMultiSetToJson<U>(v);
     else if constexpr (IsStdMap<U>::value)                return stdMapToJson<U>(v);
     else if constexpr (IsStdMultiMap<U>::value)           return stdMultiMapToJson<U>(v);
-
+    else if constexpr (std::is_enum<T>::value) {
+        return enumToJson(v);
+    }
     // clang-format on
 
     return QJsonValue::fromVariant(QVariant::fromValue(v));
 }
 
-template<typename T>
+template<typename T = JsonContainer>
 T fromJson(const QJsonValue &v)
 {
+    if constexpr (std::is_same_v<T, JsonContainer>) {
+        return JsonContainer{v};
+    }
+
     using namespace Impl;
     using Raw = std::remove_cv_t<std::remove_reference_t<T>>;
     using U = std::remove_pointer_t<Raw>; // حالا U همیشه خود کلاس است
@@ -129,7 +159,7 @@ T fromJson(const QJsonValue &v)
         auto o = new U;
         v->restoreState(v.toObject());
         return o;
-    } else if constexpr (std::is_same_v<QVariant, U>){
+    } else if constexpr (std::is_same_v<QVariant, U>) {
         return unpackJsonToVariant(v.toObject());
     } else if constexpr (Impl::IsQSharedPointer<U>::value) {
         using DataType = typename Impl::IsQSharedPointer<U>::DataType;
@@ -161,6 +191,8 @@ T fromJson(const QJsonValue &v)
     else if constexpr (IsStdUnorderedMultiSet<U>::value)  return jsonToStdUnorderedMultiSet<T>(v);
     else if constexpr (IsStdMap<U>::value)                return jsonToStdMap<T>(v);
     else if constexpr (IsStdMultiMap<U>::value)           return jsonToStdMultiMap<T>(v);
+    else if constexpr (std::is_enum<T>::value)            return jsonToEnum<T>(v);
+
     // clang-format on
 
     return T{};

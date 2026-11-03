@@ -19,6 +19,7 @@
 
 #include "jsonserialize_def.h"
 #include "traits.h"
+#include "options.h"
 
 namespace JsonSerializer::Impl {
 
@@ -151,7 +152,7 @@ QMap<KeyType, ValueType> jsonToMap(const QJsonValue &v)
         auto arr = v.toArray();
         for (auto item : arr) {
             auto o = item.toObject();
-            map.insert(fromJson<KeyType>(o["key"]), fromJson<ValueType>(o["value"]));
+            map.insert(fromJson<KeyType>(o[options.key]), fromJson<ValueType>(o[options.value]));
         }
     }
     return map;
@@ -172,8 +173,8 @@ QJsonValue mapToJson(const QMap<KeyType, ValueType> &v)
         QJsonArray arr;
         for (auto it = v.begin(); it != v.end(); ++it) {
             QJsonObject o;
-            o["key"] = toJson(it.key());
-            o["value"] = toJson(it.value());
+            o[options.key] = toJson(it.key());
+            o[options.value] = toJson(it.value());
             arr.append(o);
         }
         return arr;
@@ -192,7 +193,7 @@ QMultiMap<KeyType, ValueType> jsonToMultiMap(const QJsonValue &v)
 
     for (const auto &item : arr) {
         const auto o = item.toObject();
-        map.insert(fromJson<KeyType>(o["key"]), fromJson<ValueType>(o["value"]));
+        map.insert(fromJson<KeyType>(o[options.key]), fromJson<ValueType>(o[options.value]));
     }
 
     return map;
@@ -205,8 +206,8 @@ QJsonValue multiMapToJson(const QMultiMap<KeyType, ValueType> &v)
     QJsonArray arr;
     for (auto it = v.cbegin(); it != v.cend(); ++it) {
         QJsonObject o;
-        o["key"] = toJson(it.key());
-        o["value"] = toJson(it.value());
+        o[options.key] = toJson(it.key());
+        o[options.value] = toJson(it.value());
         arr.append(o);
     }
     return arr;
@@ -225,7 +226,7 @@ QMultiHash<KeyType, ValueType> jsonToMultiHash(const QJsonValue &v)
 
     for (const auto &item : arr) {
         const auto o = item.toObject();
-        hash.insert(fromJson<KeyType>(o["key"]), fromJson<ValueType>(o["value"]));
+        hash.insert(fromJson<KeyType>(o[options.key]), fromJson<ValueType>(o[options.value]));
     }
 
     return hash;
@@ -238,8 +239,8 @@ QJsonValue multiHashToJson(const QMultiHash<KeyType, ValueType> &hash)
     QJsonArray arr;
     for (auto it = hash.constBegin(); it != hash.constEnd(); ++it) {
         QJsonObject o;
-        o["key"]   = toJson(it.key());
-        o["value"] = toJson(it.value());
+        o[options.key]   = toJson(it.key());
+        o[options.value] = toJson(it.value());
         arr.append(o);
     }
 
@@ -274,7 +275,7 @@ QHash<KeyType, ValueType> jsonToHash(const QJsonValue &v)
 
         for (const auto &item : arr) {
             const auto o = item.toObject();
-            hash.insert(fromJson<KeyType>(o["key"]), fromJson<ValueType>(o["value"]));
+            hash.insert(fromJson<KeyType>(o[options.key]), fromJson<ValueType>(o[options.value]));
         }
     }
 
@@ -298,8 +299,8 @@ QJsonValue hashToJson(const QHash<KeyType, ValueType> &v)
         QJsonArray arr;
         for (auto it = v.cbegin(); it != v.cend(); ++it) {
             QJsonObject o;
-            o["key"] = toJson(it.key());
-            o["value"] = toJson(it.value());
+            o[options.key] = toJson(it.key());
+            o[options.value] = toJson(it.value());
             arr.append(o);
         }
         return arr;
@@ -518,8 +519,8 @@ std::map<KeyType, ValueType> jsonToStdMap(const QJsonValue &v)
         const auto arr = v.toArray();
         for (const auto &item : std::as_const(arr)) {
             const auto o = item.toObject();
-            map.emplace(fromJson<KeyType>(o["key"]),
-                        fromJson<ValueType>(o["value"]));
+            map.emplace(fromJson<KeyType>(o[options.key]),
+                        fromJson<ValueType>(o[options.value]));
         }
     }
 
@@ -543,8 +544,8 @@ QJsonValue stdMapToJson(const std::map<KeyType, ValueType> &v)
         QJsonArray arr;
         for (const auto &pair : v) {
             QJsonObject o;
-            o["key"] = toJson(pair.first);
-            o["value"] = toJson(pair.second);
+            o[options.key] = toJson(pair.first);
+            o[options.value] = toJson(pair.second);
             arr.append(o);
         }
         return arr;
@@ -563,7 +564,7 @@ std::multimap<KeyType, ValueType> jsonToStdMultiMap(const QJsonValue &v)
     std::multimap<KeyType, ValueType> map;
     for (const auto &item : std::as_const(arr)) {
         const auto o = item.toObject();
-        map.emplace(fromJson<KeyType>(o["key"]), fromJson<ValueType>(o["value"]));
+        map.emplace(fromJson<KeyType>(o[options.key]), fromJson<ValueType>(o[options.value]));
     }
     return map;
 }
@@ -575,8 +576,8 @@ QJsonValue stdMultiMapToJson(const std::multimap<KeyType, ValueType> &v)
     QJsonArray arr;
     for (const auto &pair : v) {
         QJsonObject o;
-        o["key"] = toJson(pair.first);
-        o["value"] = toJson(pair.second);
+        o[options.key] = toJson(pair.first);
+        o[options.value] = toJson(pair.second);
         arr.append(o);
     }
     return arr;
@@ -616,7 +617,7 @@ std::unordered_map<KeyType, ValueType> jsonToStdUnorderedMap(const QJsonValue &v
 
         for (const auto &item : std::as_const(arr)) {
             const auto o = item.toObject();
-            map.emplace(fromJson<KeyType>(o["key"]), fromJson<ValueType>(o["value"]));
+            map.emplace(fromJson<KeyType>(o[options.key]), fromJson<ValueType>(o[options.value]));
         }
     }
 
@@ -644,8 +645,8 @@ QJsonValue stdUnorderedMapToJson(const std::unordered_map<KeyType, ValueType> &v
         QJsonArray arr;
         for (const auto &pair : v) {
             QJsonObject o;
-            o["key"] = toJson(pair.first);
-            o["value"] = toJson(pair.second);
+            o[options.key] = toJson(pair.first);
+            o[options.value] = toJson(pair.second);
             arr.append(o);
         }
         return arr;
@@ -667,7 +668,7 @@ std::unordered_multimap<KeyType, ValueType> jsonToStdUnorderedMultiMap(const QJs
 
     for (const auto &item : std::as_const(arr)) {
         const auto o = item.toObject();
-        map.emplace(fromJson<KeyType>(o["key"]), fromJson<ValueType>(o["value"]));
+        map.emplace(fromJson<KeyType>(o[options.key]), fromJson<ValueType>(o[options.value]));
     }
 
     return map;
@@ -680,8 +681,8 @@ QJsonValue stdUnorderedMultiMapToJson(const std::unordered_multimap<KeyType, Val
     QJsonArray arr;
     for (const auto &pair : v) {
         QJsonObject o;
-        o["key"] = toJson(pair.first);
-        o["value"] = toJson(pair.second);
+        o[options.key] = toJson(pair.first);
+        o[options.value] = toJson(pair.second);
         arr.append(o);
     }
     return arr;

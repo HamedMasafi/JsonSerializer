@@ -2,6 +2,8 @@
 
 #include <QMetaProperty>
 #include "variant.h"
+#include "options.h"
+#include "enum.h"
 
 namespace JsonSerializer::Impl {
 
@@ -36,7 +38,11 @@ bool jsonToObject(const QJsonObject &json, QObject *obj)
 
     for (int i = 0; i < me->propertyCount(); ++i) {
         auto p = me->property(i);
-        p.write(obj, jsonToVariant(json[p.name()], static_cast<QMetaType::Type>(p.typeId())));
+        auto v = jsonToVariant(json[p.name()], static_cast<QMetaType::Type>(p.typeId()));
+        auto ok = p.write(obj, v);
+
+        if (!ok)
+            qWarning() << "Unable to write" << p.name() << "value=" << v;
     }
 
     return true;
@@ -50,12 +56,12 @@ QJsonObject gadgetToJson(const void *obj, const QMetaObject &metaObject)
     for (int i = 0; i < metaObject.propertyCount(); ++i) {
         auto p = metaObject.property(i);
         if (p.isEnumType())
-            jsonObject[QString{p.name()}] = variantToJson(p.readOnGadget(obj).toInt());
+            jsonObject[QString{p.name()}] = enumTypeToJson(p.enumerator(), p.readOnGadget(obj));
         else
             jsonObject[QString{p.name()}] = variantToJson(p.readOnGadget(obj));
     }
 
-    jsonObject["__className"] = metaObject.className();
+    jsonObject[options.className] = metaObject.className();
     return jsonObject;
 }
 
@@ -64,8 +70,12 @@ bool jsonToGadget(const QJsonObject &json, void *obj, const QMetaObject &metaObj
     for (int i = 0; i < metaObject.propertyCount(); ++i) {
         auto p = metaObject.property(i);
         if (json.contains(p.name()))
-            p.writeOnGadget(obj,
-                            jsonToVariant(json[p.name()], static_cast<QMetaType::Type>(p.typeId())));
+            if (p.isEnumType())
+                p.writeOnGadget(obj, jsonToEnumType(p.enumerator(), json[p.name()]));
+            else
+                p.writeOnGadget(obj,
+                                jsonToVariant(json[p.name()],
+                                              static_cast<QMetaType::Type>(p.typeId())));
     }
     return true;
 }

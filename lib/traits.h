@@ -147,4 +147,15 @@ template<>
 struct IsString<std::string> : std::true_type
 {};
 
+// Q_ENUM / Q_ENUM_NS / Q_FLAG
+template<typename T, typename = void>
+struct IsQEnum : std::false_type
+{};
+
+template<typename T>
+struct IsQEnum<T, std::void_t<decltype(qt_getEnumMetaObject(std::declval<T>()))>>
+    : std::bool_constant<
+          std::is_same_v<decltype(qt_getEnumMetaObject(std::declval<T>())), const QMetaObject *>>
+{};
+
 } // namespace JsonSerializer::Impl

@@ -6,5 +6,10 @@ add_library(JsonSerializer
   qtcontainers.h qtcontainers.cpp
   traits.h
   jsonserialize_def.h
+  enum.h enum.cpp
+  options.h
 )
 target_link_libraries(JsonSerializer PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui)
+if(MSVC)
+    target_compile_options(JsonSerializer PRIVATE /bigobj)
+endif()

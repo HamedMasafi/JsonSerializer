@@ -105,6 +105,7 @@ private slots:
     void testPair();
     void testGadget();
     void testAllVectorLikeContainers();
+    void testAutoType();
 };
 
 void BasicTest::testBasicTypes()
@@ -419,6 +420,13 @@ void BasicTest::testAllVectorLikeContainers()
     testContainer(stdlist, "std::list");
     testContainer(stddeque, "std::deque");
     testContainer(stdarray, "std::array");
+}
+
+void BasicTest::testAutoType() {
+    QString s{"Hi!"};
+    auto json = JsonSerializer::toJson(s);
+    QString s2 = JsonSerializer::fromJson(json);
+    QCOMPARE(s, s2);
 }
 
 int MyGadget::intValue() const

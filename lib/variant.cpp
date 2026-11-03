@@ -3,16 +3,138 @@
 #include <QDataStream>
 #include <QIODevice>
 #include <QMatrix4x4>
+#include <QMetaAssociation>
+#include <QMetaSequence>
+#include <QSequentialIterable>
+
 #include "jsonserialize.h"
 #include "object.h"
-#include "qttypes.h"
 #include "qtcontainers.h"
+#include "qttypes.h"
 
 namespace JsonSerializer::Impl {
 
-static const char *TYPE_KEY = "_key";
-static const char *TYPE_VALUE = "_value";
-
+/*
+template<template<typename> class Container>
+QVariant createContainer(QMetaType::Type type)
+{
+    if (type == QMetaType::Bool)
+        return QVariant::fromValue(Container<bool>{});
+    if (type == QMetaType::Int)
+        return QVariant::fromValue(Container<int>{});
+    if (type == QMetaType::UInt)
+        return QVariant::fromValue(Container<uint>{});
+    if (type == QMetaType::LongLong)
+        return QVariant::fromValue(Container<qint64>{});
+    if (type == QMetaType::ULongLong)
+        return QVariant::fromValue(Container<quint64>{});
+    if (type == QMetaType::Double)
+        return QVariant::fromValue(Container<double>{});
+    if (type == QMetaType::Long)
+        return QVariant::fromValue(Container<long>{});
+    if (type == QMetaType::Short)
+        return QVariant::fromValue(Container<short>{});
+    if (type == QMetaType::Char)
+        return QVariant::fromValue(Container<char>{});
+    if (type == QMetaType::ULong)
+        return QVariant::fromValue(Container<ulong>{});
+    if (type == QMetaType::UShort)
+        return QVariant::fromValue(Container<ushort>{});
+    if (type == QMetaType::UChar)
+        return QVariant::fromValue(Container<uchar>{});
+    if (type == QMetaType::Float)
+        return QVariant::fromValue(Container<float>{});
+    if (type == QMetaType::SChar)
+        return QVariant::fromValue(Container<signed char>{});
+    if (type == QMetaType::QString)
+        return QVariant::fromValue(Container<QString>{});
+    if (type == QMetaType::QStringList)
+        return QVariant::fromValue(Container<QStringList>{});
+    if (type == QMetaType::QByteArray)
+        return QVariant::fromValue(Container<QByteArray>{});
+    if (type == QMetaType::QDate)
+        return QVariant::fromValue(Container<QDate>{});
+    if (type == QMetaType::QTime)
+        return QVariant::fromValue(Container<QTime>{});
+    if (type == QMetaType::QDateTime)
+        return QVariant::fromValue(Container<QDateTime>{});
+    if (type == QMetaType::QUrl)
+        return QVariant::fromValue(Container<QUrl>{});
+    if (type == QMetaType::QRect)
+        return QVariant::fromValue(Container<QRect>{});
+    if (type == QMetaType::QRectF)
+        return QVariant::fromValue(Container<QRectF>{});
+    if (type == QMetaType::QSize)
+        return QVariant::fromValue(Container<QSize>{});
+    if (type == QMetaType::QSizeF)
+        return QVariant::fromValue(Container<QSizeF>{});
+    if (type == QMetaType::QLine)
+        return QVariant::fromValue(Container<QLine>{});
+    if (type == QMetaType::QLineF)
+        return QVariant::fromValue(Container<QLineF>{});
+    if (type == QMetaType::QPoint)
+        return QVariant::fromValue(Container<QPoint>{});
+    if (type == QMetaType::QPointF)
+        return QVariant::fromValue(Container<QPointF>{});
+    if (type == QMetaType::QUuid)
+        return QVariant::fromValue(Container<QUuid>{});
+    if (type == QMetaType::QColor)
+        return QVariant::fromValue(Container<QColor>{});
+    if (type == QMetaType::QFont)
+        return QVariant::fromValue(Container<QFont>{});
+    if (type == QMetaType::QPixmap)
+        return QVariant::fromValue(Container<QPixmap>{});
+    if (type == QMetaType::QImage)
+        return QVariant::fromValue(Container<QImage>{});
+    if (type == QMetaType::QIcon)
+        return QVariant::fromValue(Container<QIcon>{});
+    if (type == QMetaType::QBrush)
+        return QVariant::fromValue(Container<QBrush>{});
+    if (type == QMetaType::QPen)
+        return QVariant::fromValue(Container<QPen>{});
+    if (type == QMetaType::QPalette)
+        return QVariant::fromValue(Container<QPalette>{});
+    if (type == QMetaType::QBitArray)
+        return QVariant::fromValue(Container<QBitArray>{});
+    if (type == QMetaType::QPolygon)
+        return QVariant::fromValue(Container<QPolygon>{});
+    if (type == QMetaType::QPolygonF)
+        return QVariant::fromValue(Container<QPolygonF>{});
+    if (type == QMetaType::QRegion)
+        return QVariant::fromValue(Container<QRegion>{});
+    if (type == QMetaType::QBitmap)
+        return QVariant::fromValue(Container<QBitmap>{});
+    if (type == QMetaType::QKeySequence)
+        return QVariant::fromValue(Container<QKeySequence>{});
+    if (type == QMetaType::QTextFormat)
+        return QVariant::fromValue(Container<QTextFormat>{});
+    if (type == QMetaType::QTransform)
+        return QVariant::fromValue(Container<QTransform>{});
+    if (type == QMetaType::QRegularExpression)
+        return QVariant::fromValue(Container<QRegularExpression>{});
+    if (type == QMetaType::QEasingCurve)
+        return QVariant::fromValue(Container<QEasingCurve>{});
+    if (type == QMetaType::QByteArrayList)
+        return QVariant::fromValue(Container<QByteArrayList>{});
+    if (type == QMetaType::QColorSpace)
+        return QVariant::fromValue(Container<QColorSpace>{});
+    if (type == QMetaType::QChar)
+        return QVariant::fromValue(Container<QChar>{});
+    if (type == QMetaType::Float16)
+        return QVariant::fromValue(Container<qfloat16>{});
+    if (type == QMetaType::QLocale)
+        return QVariant::fromValue(Container<QLocale>{});
+    if (type == QMetaType::QMatrix4x4)
+        return QVariant::fromValue(Container<QMatrix4x4>{});
+    if (type == QMetaType::QVariantList)
+        return QVariant::fromValue(Container<QVariantList>{});
+    if (type == QMetaType::QVariantMap)
+        return QVariant::fromValue(Container<QVariantMap>{});
+    if (type == QMetaType::QVariantHash)
+        return QVariant::fromValue(Container<QVariantHash>{});
+    return {};
+}
+*/
 QString toBase64(const QVariant &v)
 {
     QByteArray ba;
@@ -24,8 +146,8 @@ QString toBase64(const QVariant &v)
 QVariant jsonToVariant(const QJsonObject &obj)
 {
     using namespace Impl;
-    QString typeName = obj.value(TYPE_KEY).toString();
-    QJsonValue v = obj.value(TYPE_VALUE);
+    QString typeName = obj.value(options.key).toString();
+    QJsonValue v = obj.value(options.value);
 
     // clang-format off
     if (typeName == "Bool") return QVariant::fromValue(fromJson<bool>(v));
@@ -92,8 +214,8 @@ QVariant jsonToVariant(const QJsonObject &obj)
 QVariant unpackJsonToVariant(const QJsonValue &v)
 {
     auto o = v.toObject();
-    auto type = QMetaType::type(o[TYPE_KEY].toString().toLatin1());
-    auto val = o[TYPE_VALUE];
+    auto type = QMetaType::type(o[options.key].toString().toLatin1());
+    auto val = o[options.value];
     return jsonToVariant(val, static_cast<QMetaType::Type>(type));
 }
 
@@ -101,8 +223,8 @@ QJsonValue packVariantToJson(const QVariant &val)
 {
     // clang-format off
     return QJsonObject {
-        {TYPE_KEY, QMetaType(val.userType()).name()},
-        {TYPE_VALUE, variantToJson(val)}
+        {options.key, QMetaType(val.userType()).name()},
+        {options.value, variantToJson(val)}
     };
     // clang-format on
 }
@@ -180,24 +302,68 @@ QJsonValue variantToJson(const QVariant &val)
     default: {
         auto mt = QMetaType(typeId);
         if (mt.flags() & QMetaType::IsEnumeration) {
+            qDebug() << "Is enum:" << mt.underlyingType() << mt.name() << mt.id();
+            // v = variantToJson(val, mt.underlyingType());
             v = toJson(val.toInt());
         } else if (mt.flags() & QMetaType::PointerToGadget) {
             return gadgetToJson(val.data(), *mt.metaObject());
         } else {
+            QString name = QMetaType(typeId).name();
+            if (val.canConvert<QVariantList>()) {
+                QJsonArray arr;
+
+                auto iterable = val.value<QMetaSequence::Iterable>();
+
+                for (const QVariant &item : iterable) {
+                    arr.append(variantToJson(item));
+                }
+                // qDebug() << name << "Converted to list";
+                return arr;
+            } else if (val.canConvert<QMetaAssociation::Iterable>()) {
+                auto iterable = val.value<QMetaAssociation::Iterable>();
+                QJsonArray arr;
+                for (auto it = iterable.begin(); it != iterable.end(); ++it) {
+                    const QVariant key = it.key();
+                    const QVariant value = it.value();
+
+                    QJsonObject o;
+                    o[options.key] = variantToJson(key);
+                    o[options.value] = variantToJson(value);
+                    arr.append(o);
+                }
+                // qDebug() << name << "Converted to QMetaAssociation::Iterable";
+
+                return arr;
+            }
+
+            if (name.startsWith("QList<")) {
+                return variantToJson(val.value<QVariantList>());
+            } else if (name.startsWith("QMap<")) {
+                return variantToJson(val.value<QVariantMap>());
+            } else if (name.startsWith("QSet<")) {
+                // return variantToJson(val.value<QSet<QVariant>>());
+            } else if (name.startsWith("QHash<")) {
+                return variantToJson(val.value<QVariantHash>());
+            } else if (name.startsWith("QStack<")) {
+                return variantToJson(val.value<QStack<QVariant>>());
+            } else if (name.startsWith("QQueue<")) {
+                // return variantToJson(val.value<QQueue<QVariant>>());
+            }
             // Fallback for types not explicitly handled
-            qWarning() << Q_FUNC_INFO << "Unable to save" << typeId << QMetaType(typeId).name();
-            return {}; // {{TYPE_KEY, "Unknown"}, {TYPE_VALUE, toBase64(val)}};
+            qWarning() << Q_FUNC_INFO << "Unable to save" << typeId << QMetaType(typeId).name()
+                       << val.canConvert<QVariantList>();
+            return {}; // {{options.key, "Unknown"}, {options.value, toBase64(val)}};
         }
     }
     }
 
-    return v;//QJsonObject{{TYPE_KEY, QString{QMetaType(typeId).name()}}, {TYPE_VALUE, v}};
+    return v; //QJsonObject{{options.key, QString{QMetaType(typeId).name()}}, {options.value, v}};
 }
 
 QVariant jsonToVariant(const QJsonValue &v, QMetaType::Type type)
 {
     switch (type) {
-    // clang-format off
+        // clang-format off
     case QMetaType::UnknownType: return QVariant{}; break;
     case QMetaType::Nullptr: return QVariant::fromValue(nullptr); break;
     case QMetaType::Bool: return QVariant::fromValue(fromJson<bool>(v));
@@ -267,12 +433,80 @@ QVariant jsonToVariant(const QJsonValue &v, QMetaType::Type type)
             jsonToGadget(v.toObject(), g.data(), *mt.metaObject());
             return g;
         } else {
+
+            QString name = QMetaType(type).name();
+            if (QMetaType::canConvert(mt, QMetaType::fromType<QMetaAssociation::Iterable>())) {
+                auto tmp = jsonToAssociation(v, type);
+                return tmp;
+            }
+            if (QMetaType::canConvert(mt, QMetaType::fromType<QMetaSequence::Iterable>())) {
+                auto tmp = jsonToVariantList(v, type);
+                return tmp;
+            }
+            // if (QMetaType::canConvert(mt, QMetaType::fromType<QSet<QVariant>>()))
+                // return jsonToVariantList(v, type);
+
             // Fallback for types not explicitly handled
-            qWarning() << Q_FUNC_INFO << "Unable to save" << type << QMetaType(type).name();
+            qWarning() << Q_FUNC_INFO << "Unable to load" << type << name;
         }
     }
     }
     return {};
+}
+
+QVariant jsonToVariantList(const QJsonValue &json, QMetaType::Type type)
+{
+    auto mt = QMetaType{type};
+    if (!json.isArray())
+        return {};
+
+    auto var = QVariant::fromMetaType(mt);
+    auto arr = json.toArray();
+
+    auto it = var.view<QMetaSequence::Iterable>();
+    QMetaType valueMeta = it.metaContainer().valueMetaType();
+
+    const QMetaSequence meta = it.metaContainer();
+    void *mutableData = it.mutableIterable();
+
+    for (const QJsonValue &v : arr) {
+        QVariant item = jsonToVariant(v, static_cast<QMetaType::Type>(valueMeta.id()));
+        meta.addValue(mutableData, item.data());
+    }
+
+    return var;
+}
+
+QVariant jsonToAssociation(const QJsonValue &json, QMetaType::Type type) {
+    auto mt = QMetaType{type};
+
+    auto var = QVariant::fromMetaType(mt);
+
+    auto it = var.view<QMetaAssociation::Iterable>();
+    auto hasKeys = it.metaContainer().canContainsKey();
+
+    QMetaType keyMeta = it.metaContainer().keyMetaType();
+    QMetaType valueMeta = it.metaContainer().mappedMetaType();
+
+    if (json.isArray()) {
+        auto arr = json.toArray();
+        for (const QJsonValue &v : arr) {
+            if (hasKeys) {
+                auto o = v.toObject();
+                QVariant key = jsonToVariant(o[options.key],
+                                             static_cast<QMetaType::Type>(keyMeta.id()));
+                QVariant value = jsonToVariant(o[options.value],
+                                               static_cast<QMetaType::Type>(valueMeta.id()));
+                it.setValue(key, value);
+            } else {
+                auto vvv =jsonToVariant(v, static_cast<QMetaType::Type>(keyMeta.id()));
+                it.insertKey(vvv);
+            }
+        }
+    } else if (json.isObject()) {
+    }
+
+    return var;
 }
 
 } // namespace JsonSerializer::Impl

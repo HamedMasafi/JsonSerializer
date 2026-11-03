@@ -12,4 +12,7 @@ QVariant jsonToVariant(const QJsonValue &val, QMetaType::Type type);
 QJsonValue packVariantToJson(const QVariant &val);
 QVariant unpackJsonToVariant(const QJsonValue &val);
 
+QVariant jsonToVariantList(const QJsonValue &val, QMetaType::Type type);
+QVariant jsonToAssociation(const QJsonValue &val, QMetaType::Type type);
+
 }

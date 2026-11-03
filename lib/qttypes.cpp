@@ -400,21 +400,12 @@ QUuid jsonToBasicType<QUuid>(const QJsonValue &v)
 template<>
 QJsonValue basicTypeToJson<QColor>(const QColor &v)
 {
-    QJsonObject valueObject;
-    valueObject["red"] = v.red();
-    valueObject["green"] = v.green();
-    valueObject["blue"] = v.blue();
-    valueObject["alpha"] = v.alpha();
-    return valueObject;
+    return QJsonValue{v.name(QColor::HexArgb)};
 }
 template<>
 QColor jsonToBasicType<QColor>(const QJsonValue &v)
 {
-    auto valueObject = v.toObject();
-    return QColor(valueObject["red"].toInt(),
-                  valueObject["green"].toInt(),
-                  valueObject["blue"].toInt(),
-                  valueObject["alpha"].toInt(255));
+    return QColor::fromString(v.toString());
 }
 
 // QPolygon
@@ -667,26 +658,17 @@ QByteArrayList jsonToBasicType<QByteArrayList>(const QJsonValue &v)
 template<>
 QJsonValue basicTypeToJson<QBrush>(const QBrush &v)
 {
-    QJsonObject colorObject;
-    colorObject["r"] = v.color().red();
-    colorObject["g"] = v.color().green();
-    colorObject["b"] = v.color().blue();
-    colorObject["a"] = v.color().alpha();
     QJsonObject valueObject;
     valueObject["style"] = static_cast<int>(v.style());
-    valueObject["color"] = colorObject;
+    valueObject["color"] = basicTypeToJson<QColor>(v.color());
     return valueObject;
 }
 template<>
 QBrush jsonToBasicType<QBrush>(const QJsonValue &v)
 {
     auto valueObject = v.toObject();
-    auto colorObject = valueObject["color"].toObject();
-    QColor color{colorObject["r"].toInt(),
-                 colorObject["g"].toInt(),
-                 colorObject["b"].toInt(),
-                 colorObject["a"].toInt()};
-    return QBrush{color, static_cast<Qt::BrushStyle>(valueObject["style"].toInt())};
+    return QBrush{jsonToBasicType<QColor>(valueObject["color"]),
+                  static_cast<Qt::BrushStyle>(valueObject["style"].toInt())};
 }
 
 // QPalette
