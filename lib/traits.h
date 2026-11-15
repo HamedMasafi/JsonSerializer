@@ -158,4 +158,13 @@ struct IsQEnum<T, std::void_t<decltype(qt_getEnumMetaObject(std::declval<T>()))>
           std::is_same_v<decltype(qt_getEnumMetaObject(std::declval<T>())), const QMetaObject *>>
 {};
 
+template<typename T>
+struct IsStdOptional : std::false_type
+{};
+template<typename T>
+struct IsStdOptional<std::optional<T>> : std::true_type
+{
+    using ItemType = T;
+};
+
 } // namespace JsonSerializer::Impl

@@ -141,6 +141,11 @@ QJsonValue toJson(const T &v)
     else if constexpr (IsStdMultiMap<U>::value)           return stdMultiMapToJson<U>(v);
     else if constexpr (std::is_enum<T>::value) {
         return enumToJson(v);
+    } else if constexpr (IsStdOptional<T>::value) {
+        if (v)
+            return toJson(v.value());
+        else
+            return {};
     }
     // clang-format on
 
@@ -209,7 +214,10 @@ T fromJson(const QJsonValue &v)
     else if constexpr (IsStdMap<U>::value)                return jsonToStdMap<T>(v);
     else if constexpr (IsStdMultiMap<U>::value)           return jsonToStdMultiMap<T>(v);
     else if constexpr (std::is_enum<T>::value)            return jsonToEnum<T>(v);
-
+    else if constexpr (IsStdOptional<T>::value)           {
+        if (!v.isNull() && !v.isUndefined())
+            return std::make_optional<typename IsStdOptional<T>::ItemType>(fromJson(v));
+    }
     // clang-format on
 
     return T{};
