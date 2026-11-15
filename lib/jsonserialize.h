@@ -12,6 +12,22 @@
 
 #include <type_traits>
 
+#define JSON_SERIALIZER_GADGET(name) Q_CLASSINFO("jsonserializer_type", QT_STRINGIFY(name))
+
+#define JSON_SERIALIZER_BASE_GADGET \
+public: \
+    virtual const QMetaObject *metaObject() const \
+    { \
+        return &staticMetaObject; \
+    }
+
+#define JSON_SERIALIZER_DERIVED_GADGET \
+public: \
+    const QMetaObject *metaObject() const override \
+    { \
+        return &staticMetaObject; \
+    }
+
 // #include "jsonserialize_def.h"
 namespace JsonSerializer {
 
@@ -147,10 +163,11 @@ T fromJson(const QJsonValue &v)
     else if constexpr (Impl::IsQtTypeType<U>::value) {
         return Impl::jsonToBasicType<T>(v);
     } else if constexpr (std::is_base_of_v<QObject, U>) {
-        auto o = new U;
-        if (!Impl::jsonToObject(v.toObject(), o))
-            return nullptr;
-        return o;
+        // auto o = new U;
+        // if (!Impl::jsonToObject(v.toObject(), o))
+        //     return nullptr;
+        // return o;
+        return jsonToObject<U>(v.toObject());
     } else if constexpr (Impl::IsQGadget<U>) {
         auto o = new U;
         Impl::jsonToGadget(v.toObject(), o, U::staticMetaObject);

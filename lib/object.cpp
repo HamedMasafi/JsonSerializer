@@ -1,9 +1,9 @@
 #include "object.h"
 
 #include <QMetaProperty>
-#include "variant.h"
-#include "options.h"
 #include "enum.h"
+#include "options.h"
+#include "variant.h"
 
 namespace JsonSerializer::Impl {
 
@@ -29,6 +29,8 @@ QJsonObject objectToJson(QObject *obj)
         jsonObject["__dynamicProperties"] = dynamicPropertiesObject;
     }
 
+    jsonObject[options.className] = obj->metaObject()->className();
+
     return jsonObject;
 }
 
@@ -48,7 +50,6 @@ bool jsonToObject(const QJsonObject &json, QObject *obj)
     return true;
 }
 
-
 QJsonObject gadgetToJson(const void *obj, const QMetaObject &metaObject)
 {
     QJsonObject jsonObject;
@@ -61,7 +62,15 @@ QJsonObject gadgetToJson(const void *obj, const QMetaObject &metaObject)
             jsonObject[QString{p.name()}] = variantToJson(p.readOnGadget(obj));
     }
 
-    jsonObject[options.className] = metaObject.className();
+    QString className;
+    for (auto i = 0; i < metaObject.classInfoCount(); ++i) {
+        if (!strcmp(metaObject.classInfo(i).name(), "jsonserializer_type")) {
+            className = metaObject.classInfo(i).value();
+        }
+    }
+    if (className.isEmpty())
+        className = metaObject.className();
+    jsonObject[options.className] = className;
     return jsonObject;
 }
 
@@ -86,8 +95,12 @@ QObject *createQObject(const QString &className)
 
     if (!metaObject || !metaObject->inherits(&QObject::staticMetaObject))
         return nullptr;
-
-    return metaObject->newInstance();
+    auto r = metaObject->newInstance();
+    if (!r)
+        qWarning().noquote().nospace()
+            << "Unable to create " << className
+            << " class. Check that the classes default constructor is Q_INVOKABLE.";
+    return r;
 }
 
 QVariant createGadget(const QString &className)
@@ -99,4 +112,6 @@ QVariant createGadget(const QString &className)
 
     return metaType.create() ? QVariant(metaType, metaType.create()) : QVariant{};
 }
-}
+
+
+} // namespace JsonSerializer::Impl
