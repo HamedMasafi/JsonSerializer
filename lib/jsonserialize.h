@@ -75,7 +75,7 @@ namespace JsonSerializer {
 class Serializable
 {
 public:
-    virtual void saveState(QJsonObject &) = 0;
+    virtual void saveState(QJsonObject &) const = 0;
     virtual void restoreState(const QJsonObject &) = 0;
 };
 
@@ -96,7 +96,10 @@ QJsonValue toJson(const T &v)
         return gadgetToJson(v, U::staticMetaObject);
     else if constexpr (std::is_base_of_v<Serializable, U>) {
         QJsonObject o;
-        v->saveState(o);
+        if constexpr (std::is_pointer<T>::value)
+            v->saveState(o);
+        else
+            v.saveState(o);
         return o;
         // } else if constexpr (std::is_same_v<U, QVariantMap>) {
         //     QJsonObject obj;
@@ -178,9 +181,15 @@ T fromJson(const QJsonValue &v)
         Impl::jsonToGadget(v.toObject(), o, U::staticMetaObject);
         return o;
     } else if constexpr (std::is_base_of_v<Serializable, U>) {
-        auto o = new U;
-        v->restoreState(v.toObject());
-        return o;
+        if constexpr (std::is_pointer<T>::value) {
+            auto o = new U;
+            o->restoreState(v.toObject());
+            return o;
+        } else {
+            T o;
+            o.restoreState(v.toObject());
+            return o;
+        }
     } else if constexpr (std::is_same_v<QVariant, U>) {
         return unpackJsonToVariant(v.toObject());
     } else if constexpr (Impl::IsQSharedPointer<U>::value) {
